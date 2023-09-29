@@ -1,0 +1,824 @@
+---
+title: "STA 106 Final Project"
+author: "Vincent Barletta"
+date: "2023-03-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo = FALSE, include=FALSE}
+install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+install.packages("DescTools", repos = "http://cran.us.r-project.org")
+install.packages("iNZightTools", repos = "http://cran.us.r-project.org")
+install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
+library(RColorBrewer)
+
+library(tidyverse)
+library(DescTools)
+library(iNZightTools)
+```
+# Introduction
+
+## The entropy approach explanation
+The smaller a Shannon entropy is, the better predictive capability of the vector of proportions has.
+The advantages of entropy approach are:
+
+No normality and constant variance assumptions are needed.
+
+No needs to do any linear reg. analysis to evaluate effects of individual covariate factors and their interaction.
+
+Type-1 and Type-2 errors can be evaluated by simulating a large number of copies from proper Multinomial r.v..
+
+We are able to investigate whether high order interacting effects are potential or not.
+
+We can couple this with HC-algorithm applied on the collection of all four kinds of histograms to obtain a global view of such data analysis.
+
+## HC-approach and why we will utilize both
+
+We want to factor both of these because the HC-approach is based on similarity of distribution shapes among all involving populations, while the entropy approach focuses on predictive capability.
+
+The predictive capability is only one aspect of distribution-shape, which is very much like the focus on the aspect of mean-value.
+
+From reliability perspective, the entropy approach is simpler and easy to understand, while the HC-approach allows the global relational similarity among all populations to be seen clearly and precisely.
+
+From computational cost perspective, HC-approach is much more costly than entropy approach. However, the computational cost is very affordable.
+
+Both approaches allow to investigate more higher order interacting effects than two-way ones.
+
+# Methods
+
+### Divide the entire Kaggle version of BRFSS dataset with respect to categorical variable GenHealth into 5 sub-datasets. Again the focal measurement is BMI.
+
+```{r}
+heart= read.csv('heart_disease_health_indicators_BRFSS2015.csv',header=TRUE)
+heart$HighBP=as.factor(heart$HighBP)
+heart$HighChol=as.factor(heart$HighChol)
+heart$Stroke=as.factor(heart$Stroke)
+heart$HeartDiseaseorAttack=as.factor(heart$HeartDiseaseorAttack)
+suppressWarnings(ggplot(heart, aes(x = GenHlth)) +
+  geom_histogram(stat = "count", fill = "steelblue", alpha = 0.8) +
+  xlab("GenHealth Level") +
+  ylab("Count") +
+  ggtitle("Distribution of GenHealth Levels"))
+
+```
+
+Looking at the general distribution of responses, a General Health Level of 2 is by far the most popular response across all responding patients.
+
+
+```{r}
+ for (i in 1:5) {
+    gen_health_subset <- heart %>% filter(GenHlth == i) 
+    dataset_name <- paste("gen_health_", i, sep="")
+    assign(dataset_name, gen_health_subset)
+ }
+
+```
+
+Now, our data set is split five ways, based on their general health. However, our dataset is still very large, with many different variables. We want to narrow this down to a few binary variables to see the interacting effects that it has on a person's BMI.
+
+We will lean on the results from our past projects for how we want to choose our variables. We already have one binary variable, General Health, and we will look at some of the largest contributing factors to having a high BMI.
+
+These are if the patient has experienced a heart attack or has heart disease (HeartDiseaseorAttack), if a patient has High Blood Pressure (HighBP), if a patient has high cholesterol (HighChol), and if a patient has had a stroke before (Stroke).
+
+### Within each sub-dataset, investigate the 3-way or 4-way or 5-way interacting effects on BMI distribution shapes pertaining to 3, 4 or 5 binary categorical variables of your choices.
+
+```{r}
+gen_health_1 <- gen_health_1 %>% select(HeartDiseaseorAttack, HighBP, HighChol, Stroke, GenHlth, BMI)
+gen_health_2 <- gen_health_2 %>% select(HeartDiseaseorAttack, HighBP, HighChol, Stroke, GenHlth, BMI)
+gen_health_3 <- gen_health_3 %>% select(HeartDiseaseorAttack, HighBP, HighChol, Stroke, GenHlth, BMI)
+gen_health_4 <- gen_health_4 %>% select(HeartDiseaseorAttack, HighBP, HighChol, Stroke, GenHlth, BMI)
+gen_health_5 <- gen_health_5 %>% select(HeartDiseaseorAttack, HighBP, HighChol, Stroke, GenHlth, BMI)
+
+
+suppressWarnings(ggplot(gen_health_1, aes(x = BMI)) +
+  geom_histogram(stat = "count", fill = "purple", alpha = 0.8) +
+  xlab("BMI") +
+  ylab("Count") +
+  ggtitle("BMI Distribution amongst GenHlth=1 Patients"))
+suppressWarnings(ggplot(gen_health_2, aes(x = BMI)) +
+  geom_histogram(stat = "count", fill = "orange", alpha = 0.8) +
+  xlab("BMI") +
+  ylab("Count") +
+  ggtitle("BMI Distribution amongst GenHlth=2 Patients"))
+suppressWarnings(ggplot(gen_health_3, aes(x = BMI)) +
+  geom_histogram(stat = "count", fill = "cyan", alpha = 0.8) +
+  xlab("BMI") +
+  ylab("Count") +
+  ggtitle("BMI Distribution amongst GenHlth=3 Patients"))
+suppressWarnings(ggplot(gen_health_4, aes(x = BMI)) +
+  geom_histogram(stat = "count", fill = "coral", alpha = 0.8) +
+  xlab("BMI") +
+  ylab("Count") +
+  ggtitle("BMI Distribution amongst GenHlth=4 Patients"))
+suppressWarnings(ggplot(gen_health_5, aes(x = BMI)) +
+  geom_histogram(stat = "count", fill = "springgreen", alpha = 0.8) +
+  xlab("BMI") +
+  ylab("Count") +
+  ggtitle("BMI Distribution amongst GenHlth=5 Patients"))
+
+mean(gen_health_1$BMI)
+mean(gen_health_2$BMI)
+mean(gen_health_3$BMI)
+mean(gen_health_4$BMI)
+mean(gen_health_5$BMI)
+
+
+```
+
+On a surface level, the BMI distribution shapes of each GenHealth level look relatively similar. The most noticeable difference is the mean begins to move to the right, and there is a visible right tail for higher GenHlth levels.
+
+The mean values steadily escalate with each level until GenHlth = 5. Interestingly, GenHlth = 5 has a lower mean value than GenHlth = 4. I hypothesize that this is because gen_health_4 has nearly 3x as many rows as gen_health_5.
+
+```{r}
+nrow(gen_health_4)
+nrow(gen_health_5)
+```
+
+Nonetheless, we will continue forward to see how variables affect BMI shape.
+
+### Within each sub-dataset specific investigation, apply HC-approach and Entropy approach.
+
+Largely, we are going to procure the same variables for each general health level, repeat the same investigative procedures, and see if there are any differences in BMI distribution shape because of a certain variable's interacting effects.
+
+We are going to begin our dive into entropy by looking at individual predictor's total sample-wide effect and comparing it with others. After that, we can combine multiple factors into our contingency chart and begin look at how different interacting variables affect the BMI distribution.
+
+```{r}
+Build_contigencytable=function(data,group,variable,bins=10,proportion=FALSE){
+  table1=NULL
+  # create break points for the following histograms
+  # from minimum to maximum with equal distance
+  ax=seq(min(data[,variable]),max(data[,variable]),length.out=bins+1)
+  # Save histogram data
+  list_group=unique(data[,group])
+  for(i in list_group){
+    hg1=hist(data[data[,group]==i,variable], breaks = ax,plot = FALSE)
+    table1=rbind(table1,hg1$counts)
+  }
+  rownames(table1)=list_group
+  colnames(table1)=1:ncol(table1)
+  # calculate row sum and combine it  with the current table
+  table1=cbind(table1, 'Total'=apply(table1,1,sum))
+  # calculate column sum and combine it  with the current table
+  table1=rbind(table1, 'Total'=apply(table1,2,sum))
+
+  if(proportion){
+    # convert to proportions
+    n_col=ncol(table1)
+    for(i in 1:nrow(table1)){
+      table1[i,]=table1[i,]/table1[i,n_col]
+    }
+  }
+  table1
+}
+
+table1=Build_contigencytable(gen_health_1,"HighBP","BMI",10,TRUE)
+table1=table1[,1:(ncol(table1)-1)]
+
+#Formula 1: H[Z]
+#Entropy of the overall variable
+gen1_BP_E <- Entropy(table1[3,],base=exp(1))
+
+# formula 2: H[Z|M=1]
+#Let's look solely at patients with high blood pressure
+gen1_BP_1_E <- Entropy(table1[1,],base=exp(1))
+
+# formula 2: H[Z|M=0]
+#Now we look at when patients do not have high blood pressure
+gen1_BP_0_E <- Entropy(table1[2,],base=exp(1))
+```
+
+These three values are all pretty close to each other. BP = 0 is the lowest entropy value, meaning that people with normal blood pressure are placed closely together (less variability) in the overall BMI distribution.
+
+Let's do this baseline calculation with our other main variables and compile our findings before creating grouped-variable contingency tables
+
+```{r}
+table1=Build_contigencytable(gen_health_1,"HighChol","BMI",10,TRUE)
+table1=table1[,1:(ncol(table1)-1)]
+
+#Formula 1: H[Z]
+#Entropy of the overall variable
+gen1_Chol_E <- Entropy(table1[3,],base=exp(1))
+
+# formula 2: H[Z|M=1]
+#Let's look solely at patients with high cholesterol
+gen1_Chol_1_E <- Entropy(table1[1,],base=exp(1))
+
+# formula 2: H[Z|M=0]
+#Now we look at when patients do not have high cholesterol
+gen1_Chol_0_E <- Entropy(table1[2,],base=exp(1))
+```
+The pattern of BP = 0 < Z = BP < BP = 1 is repeated again for cholesterol, meaning that not having high cholesterol is the best determinant of placement in the BMI distribution of the three.
+
+```{r}
+table1=Build_contigencytable(gen_health_1,"HeartDiseaseorAttack","BMI",10,TRUE)
+table1=table1[,1:(ncol(table1)-1)]
+
+#Formula 1: H[Z]
+#Entropy of the overall variable
+gen1_HD_E <- Entropy(table1[3,],base=exp(1))
+
+# formula 2: H[Z|M=1]
+#Let's look solely at patients with heart disease
+gen1_HD_1_E <- Entropy(table1[1,],base=exp(1))
+
+# formula 2: H[Z|M=0]
+#Now we look at when patients do not have high cholesterol
+gen1_HD_0_E <- Entropy(table1[2,],base=exp(1))
+
+gen1_HD_0_E
+gen1_HD_1_E
+gen1_HD_E
+```
+We see the opposite here for heart disease/attack, as the variable being true has the lowest Entropy value and is the best determinant of distribution shape (by very little).
+
+```{r}
+table1=Build_contigencytable(gen_health_1,"Stroke","BMI",10,TRUE)
+table1=table1[,1:(ncol(table1)-1)]
+
+#Formula 1: H[Z]
+#Entropy of the overall variable
+gen1_Stroke_E <- Entropy(table1[3,],base=exp(1))
+
+# formula 2: H[Z|M=1]
+#Let's look solely at patients that have had a stroke
+gen1_Stroke_1_E <- Entropy(table1[1,],base=exp(1))
+
+# formula 2: H[Z|M=0]
+#Now we look at when patients who have not had a stroke
+gen1_Stroke_0_E <- Entropy(table1[2,],base=exp(1))
+
+gen1_Stroke_0_E
+gen1_Stroke_1_E
+gen1_Stroke_E
+```
+
+People who have had a stroke before have a much lower entropy value than those who have not. This is because having a stroke is typically a very large factor in BMI calculation, and there are much fewer people who have had a stroke, so their position would be determined much easier.
+
+No matter the variable, the entropy of the overall dataset remains the same.
+Independently, let's look at which variable being on or off has the lowest entropy value.
+
+```{r}
+gen1_variable_entropies <- data.frame( "0" = c(gen1_BP_0_E, gen1_Chol_0_E, gen1_HD_0_E, gen1_Stroke_0_E), "1" = c(gen1_BP_1_E, gen1_Chol_1_E, gen1_HD_1_E, gen1_Stroke_1_E), row.names = c("BP"," Chol", "HD", "Stroke"))
+gen1_variable_entropies
+```
+
+As an independent variable, of the four variables selected, having a normal cholesterol level is the most reliable determinant of distribution shape for the BMI distribution of patients with a general health level of 1.
+
+Given the very large amount of variable interactions that we are going to process, I have decided to instead focuson HighBP, HighChol, and HeartDiseaseorAttack as the variables to examine moving forward. This is done to provide more focus to our study moving forward. I believe it will also make for some more noticeable differences between the entropy graphs, which may have very similar values.
+
+Now, let's combine all of them together and get the overall histogram for the combined effects of our four variables: BP, Chol, and HD.
+
+We need to compare individual effects (0,0,1) with (1,1,0), (1,0, 1), etc. and (1,1,1). 
+
+```{r}
+gen_health_1_combined = combineCatVars(gen_health_1, vars = c('HeartDiseaseorAttack', 'HighBP', 'HighChol'), sep = "_")
+
+
+total_vars=Build_contigencytable(gen_health_1_combined,"HeartDiseaseorAttack_HighBP_HighChol","BMI",10,TRUE)
+total_vars=total_vars[,1:(ncol(total_vars)-1)]
+
+entropies = numeric(nrow(total_vars))
+
+for (i in 1:nrow(total_vars)) {
+  entropy_val <- Entropy(total_vars[i,],base=exp(1))
+  dataset_name <- rownames(total_vars)[i]
+  assign(dataset_name, entropy_val)
+  entropies[i] = entropy_val
+}
+
+entropy_table <- cbind.data.frame(rownames(total_vars), entropies)
+colnames(entropy_table) <- c("HeartDiseaseorAttack, HighBP, HighChol", "Entropy Values")
+entropy_table
+```
+Now, we have all of the collective entropy values for each of the different variables. On the surface level (without intensive multinomial simulation), we get some interesting insights. 
+
+The variable combination with the lowest entropy value is HD = 1, HighBP = 0, HighChol = 1. This is understandable, as these characteristics would determine a person to be in very bad shape in a category of generally very healthy people. Therefore, these people will be typically placed in a similar area (one would presume the higher end of the BMI scale).
+
+Now, we will use random samples from the multinomial distribution to simulate many results with the entropy of a single variable combination and compare their histogram distributions to get an idea of what interacting variables have the largest effect on BMI distribution for GenHlth = 1.
+
+We'll start with the Total row to see what the entire sample looks like (C[Z]).
+
+```{r}
+set.seed(123)
+genhlth_Tot=rmultinom(1000,100,total_vars[9,])
+B=ncol(genhlth_Tot)
+# initialize a vector to save all entropies.
+entropies=numeric(B)
+for(i in 1:B){
+  entropies[i]=Entropy(genhlth_Tot[,i],base=exp(1))
+}
+gh1_entropy_9 <- entropies
+hist(gh1_entropy_9,main='Histogram of Entropy of Overall Sample',xlab='Entropy')
+```
+
+Now, we will repeat this for the 8 other rows.
+
+### Each investigation must include reliability discussions concerning results derived from these two approaches based on simulated data from Multinomial random variables. (For reliability consideration on HC-approach, 5 HC-trees would be enough.)
+
+
+```{r}
+ for (i in 1:9) {
+    sample1=rmultinom(1000,100,total_vars[i,])
+    B=ncol(sample1)
+    # initialize a vector to save all entropies.
+    entropies=numeric(B)
+    for(j in 1:B){
+      entropies[j]=Entropy(sample1[,j],base=exp(1))
+    }
+    dataset_name <- paste("gh1_entropy_", i, sep="")
+    assign(dataset_name, entropies)
+}
+
+
+for( i in 1:9) {
+    dataset_name <- paste("gh1_entropy_", i, sep="")
+    y_name <- paste("Var ", i, sep="")
+    assign(dataset_name,data.frame(x = get(dataset_name), y = as.factor(y_name)))
+}
+colnames(gh1_entropy_1) <- c("Entropy", "Var")
+colnames(gh1_entropy_2) <- c("Entropy", "Var")
+colnames(gh1_entropy_3) <- c("Entropy", "Var")
+colnames(gh1_entropy_4) <- c("Entropy", "Var")
+colnames(gh1_entropy_5) <- c("Entropy", "Var")
+colnames(gh1_entropy_6) <- c("Entropy", "Var")
+colnames(gh1_entropy_7) <- c("Entropy", "Var")
+colnames(gh1_entropy_8) <- c("Entropy", "Var")
+colnames(gh1_entropy_9) <- c("Entropy", "Var")
+
+gh1 <- rbind(gh1_entropy_1, gh1_entropy_2, gh1_entropy_3, gh1_entropy_4, gh1_entropy_5, gh1_entropy_6, gh1_entropy_7, gh1_entropy_8, gh1_entropy_9)
+
+pal <- brewer.pal(9, "PuBuGn")
+
+ggplot(gh1, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, bins = 30, color = "black", position = "stack") +
+  scale_fill_manual(name = "Var", values = pal)
+
+```
+Now, we finally have a stacked histogram to look at comparing all of the entropy histograms across the different variables. We can also look at their individually colored histograms using the facet wrap function.
+
+```{r}
+ggplot(gh1, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, color = "black") +
+  scale_fill_manual(name = "Var", values = pal) +
+  facet_wrap(~ Var, ncol = 3)
+```
+
+These graphs are overall very similar in their overall shape and distribution. There is one, somewhat noticeable standout: Var 5. From the table of entropies we created earlier, we know that this is HighBP = 0, HD = 1, and HighChol = 1. While not only having the lowest entropy value pre-simulation, it's BMI distribution is the most left-leaning with the lowest overall mean of the bunch. 
+
+In comparison, Var 4 has the highest entropy value and the most right-leaning BMI distribution according to the histogram plot. This is HighBP = 1, HD = 1, and HighChol = 1. Interestingly, these patients have the most spread across the BMI distribution in comparison to all other patients in GenHlth = 1. I believe this is due to a low sample size, as most people with high blood pressure, cholesterol, and have heart disease generally have very poor health.
+
+As an individual variable, HighChol is the best determinant of BMI distribution, and the second best overall. In terms of multivariable interactions, HD = 1 BP = 0 Chol = 1 is the overall best determinant of BMI distribution for GenHealth = 1.
+
+
+Now, let's look at the HC-tree for this distribution.
+
+```{r, include=FALSE}
+install.packages("cluster", repos = "http://cran.us.r-project.org")
+install.packages("factoextra", repos = "http://cran.us.r-project.org")
+library(factoextra)
+library(cluster)
+```
+
+```{r}
+clusters <- hclust(dist(total_vars), method = 'average')
+plot(clusters,xlab='',main='HC Tree of BMI Distribution by Variable Combination')
+```
+
+This checks out with our entropy results. 1_0_1 is the most removed from the other clusters, similar to how it was by far the most left-leaning graph on the BMI distribution. Looking at the rest of the tree, we see a lot of results corresponding to the initial entropy chart.
+
+0_1_0 and 1_1_0 both had very high entropy values before, while 1_0_0 and Total had lower values. While I was initially confused as to why 1_0_1 would be grouped with higher entropy value variables, it makes perfect since in terms of overall placement on a BMI distribution.
+
+Most of the categories with none or only one variable being true are on the left side. Patients in these categories have smaller BMIs, whereas patients with multiple conditions have higher BMIs, and are grouped together accordingly.
+
+### General Health 2
+
+```{r}
+gen_health_2_combined = combineCatVars(gen_health_2, vars = c('HeartDiseaseorAttack', 'HighBP', 'HighChol'), sep = "_")
+
+
+total_vars_2=Build_contigencytable(gen_health_2_combined,"HeartDiseaseorAttack_HighBP_HighChol","BMI",10,TRUE)
+total_vars_2=total_vars_2[,1:(ncol(total_vars_2)-1)]
+
+entropies = numeric(nrow(total_vars_2))
+
+for (i in 1:nrow(total_vars_2)) {
+  entropy_val <- Entropy(total_vars_2[i,],base=exp(1))
+  dataset_name <- rownames(total_vars_2)[i]
+  assign(dataset_name, entropy_val)
+  entropies[i] = entropy_val
+}
+
+entropy_table <- cbind.data.frame(rownames(total_vars_2), entropies)
+colnames(entropy_table) <- c("HeartDiseaseorAttack, HighBP, HighChol", "Entropy Values")
+entropy_table
+```
+
+The lowest entropy value is 1_0_1 (HD = 1, BP = 0, Chol = 1) and the highest entropy value is 1_1_0 (HD = 1, BP = 1, Chol = 0). My initial thought is that HighChol will be the best predictor for BMI for the GenHlth = 2 sample. We can see that the second lowest entropy is 0_0_1. The third lowest is 1_0_0 (HD = 1), therefore leading me to believe that HighBP is not a good predictor for BMI. Not only does it raise the entropy values for the other variables (in 1_1_0 and 0_1_1), but HighBP isolated (0_1_0) has the second highest entropy value, clocking in at 1.0246.
+
+```{r}
+set.seed(123)
+genhlth_Tot=rmultinom(1000,100,total_vars_2[9,])
+B=ncol(genhlth_Tot)
+# initialize a vector to save all entropies.
+entropies=numeric(B)
+for(i in 1:B){
+  entropies[i]=Entropy(genhlth_Tot[,i],base=exp(1))
+}
+gh2_entropy_9 <- entropies
+hist(gh2_entropy_9,main="Histogram of GenHlth = 2 Sample Entropy",xlab='Entropy')
+```
+
+Interestingly, the entropy of the sample is relatively normal. It looks very similar to the sample entropy for GenHlth = 2. In order to get more detailed insights, we will look at each entropy value extrapolated with multinomial simulations.
+
+```{r}
+ for (i in 1:9) {
+    sample2=rmultinom(1000,100,total_vars_2[i,])
+    B=ncol(sample2)
+    # initialize a vector to save all entropies.
+    entropies=numeric(B)
+    for(j in 1:B){
+      entropies[j]=Entropy(sample2[,j],base=exp(1))
+    }
+    dataset_name <- paste("gh2_entropy_", i, sep="")
+    assign(dataset_name, entropies)
+}
+
+
+for( i in 1:9) {
+    dataset_name <- paste("gh2_entropy_", i, sep="")
+    y_name <- paste("Var ", i, sep="")
+    assign(dataset_name,data.frame(x = get(dataset_name), y = as.factor(y_name)))
+}
+colnames(gh2_entropy_1) <- c("Entropy", "Var")
+colnames(gh2_entropy_2) <- c("Entropy", "Var")
+colnames(gh2_entropy_3) <- c("Entropy", "Var")
+colnames(gh2_entropy_4) <- c("Entropy", "Var")
+colnames(gh2_entropy_5) <- c("Entropy", "Var")
+colnames(gh2_entropy_6) <- c("Entropy", "Var")
+colnames(gh2_entropy_7) <- c("Entropy", "Var")
+colnames(gh2_entropy_8) <- c("Entropy", "Var")
+colnames(gh2_entropy_9) <- c("Entropy", "Var")
+
+gh2 <- rbind(gh2_entropy_1, gh2_entropy_2, gh2_entropy_3, gh2_entropy_4, gh2_entropy_5, gh2_entropy_6, gh2_entropy_7, gh2_entropy_8, gh2_entropy_9)
+
+pal <- brewer.pal(9, "YlOrRd")
+
+ggplot(gh2, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, bins = 30, color = "black", position = "stack") +
+  scale_fill_manual(name = "Var", values = pal)
+
+```
+
+From this graph, it appears that Var 8's (1_0_1) entropy distribution is the farthest left, which is congruent with our previous findings. Var 7 (1_1_0) appears to be the farthest right.
+
+```{r}
+ggplot(gh2, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, color = "black") +
+  scale_fill_manual(name = "Var", values = pal) +
+  facet_wrap(~ Var, ncol = 3)
+```
+
+Looking at the grid of graphs, we can see a stark difference between Var 8 (1_0_1) and Var 7 (1_1_0). Looking at individual variables, graphs of Var 1, 4, and 6, HighChol has the leftmost distribution, followed closely by HeartDiseaseorAttack (whose curve closely resembles a normal distribution). Var 1 (1_0_0) is much worse in comparison, and is farther right.
+
+As an individual variable, HighChol is the best determinant of BMI distribution, and the second best overall. In terms of multivariable interactions, HD = 1 BP = 0 Chol = 1 is the overall best determinant of BMI distribution for GenHealth = 2.
+
+```{r}
+clusters <- hclust(dist(total_vars_2), method = 'average')
+plot(clusters,xlab='',main='HC Tree of BMI Distribution by Variable Combination')
+```
+
+The HC diagram aligns with our findings. 0_0_1 and 1_0_1 are closely related in their BMI distributions, which confirms our entropy findings. Interestingly, (1,0,0) is close in distribution shape to (0,0,0), meaning that the distribution of only HD = 1 is not that different from healthy patients that do not have any of the explored health problems.
+
+Overall, GenHlth = 2 is quite similar to GenHlth = 1 in how its variables affect BMI distribution.
+
+### General Health Level 3
+
+```{r}
+gen_health_3_combined = combineCatVars(gen_health_3, vars = c('HeartDiseaseorAttack', 'HighBP', 'HighChol'), sep = "_")
+
+
+total_vars_3=Build_contigencytable(gen_health_3_combined,"HeartDiseaseorAttack_HighBP_HighChol","BMI",10,TRUE)
+total_vars_3=total_vars_3[,1:(ncol(total_vars_3)-1)]
+
+entropies = numeric(nrow(total_vars_3))
+
+for (i in 1:nrow(total_vars_3)) {
+  entropy_val <- Entropy(total_vars_3[i,],base=exp(1))
+  dataset_name <- rownames(total_vars_3)[i]
+  assign(dataset_name, entropy_val)
+  entropies[i] = entropy_val
+}
+
+entropy_table <- cbind.data.frame(rownames(total_vars_3), entropies)
+colnames(entropy_table) <- c("HeartDiseaseorAttack, HighBP, HighChol", "Entropy Values")
+entropy_table
+```
+
+The lowest entropy value is 1_0_1 and the highest entropy value is 0_1_0. At this point, it appears that HighBP is generally a bad predictor for BMI distribution across all General Health levels. However, in GenHlth = 3, the strongest individual predictor, based on non-simulated entropy values, is HeartDiseaseorAttack = 1 (although by a very small margin).
+
+The most noticeable trend from this table is that the overall entropy values are growing larger with each GenHlth level.
+
+```{r}
+set.seed(123)
+genhlth_Tot_3=rmultinom(1000,100,total_vars_3[9,])
+B=ncol(genhlth_Tot_3)
+# initialize a vector to save all entropies.
+entropies=numeric(B)
+for(i in 1:B){
+  entropies[i]=Entropy(genhlth_Tot_3[,i],base=exp(1))
+}
+gh3_entropy_9 <- entropies
+hist(gh3_entropy_9,main="Histogram of GenHlth = 3 Sample Entropy",xlab='Entropy')
+```
+
+```{r}
+ for (i in 1:9) {
+    sample3=rmultinom(1000,100,total_vars_3[i,])
+    B=ncol(sample3)
+    # initialize a vector to save all entropies.
+    entropies=numeric(B)
+    for(j in 1:B){
+      entropies[j]=Entropy(sample3[,j],base=exp(1))
+    }
+    dataset_name <- paste("gh3_entropy_", i, sep="")
+    assign(dataset_name, entropies)
+}
+
+
+for( i in 1:9) {
+    dataset_name <- paste("gh3_entropy_", i, sep="")
+    y_name <- paste("Var ", i, sep="")
+    assign(dataset_name,data.frame(x = get(dataset_name), y = as.factor(y_name)))
+}
+
+colnames(gh3_entropy_1) <- c("Entropy", "Var")
+colnames(gh3_entropy_2) <- c("Entropy", "Var")
+colnames(gh3_entropy_3) <- c("Entropy", "Var")
+colnames(gh3_entropy_4) <- c("Entropy", "Var")
+colnames(gh3_entropy_5) <- c("Entropy", "Var")
+colnames(gh3_entropy_6) <- c("Entropy", "Var")
+colnames(gh3_entropy_7) <- c("Entropy", "Var")
+colnames(gh3_entropy_8) <- c("Entropy", "Var")
+colnames(gh3_entropy_9) <- c("Entropy", "Var")
+
+
+gh3 <- rbind(gh3_entropy_1, gh3_entropy_2, gh3_entropy_3, gh3_entropy_4, gh3_entropy_5, gh3_entropy_6, gh3_entropy_7, gh3_entropy_8, gh3_entropy_9)
+
+pal <- brewer.pal(9, "YlGnBu")
+
+ggplot(gh3, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, bins = 30, color = "black", position = "stack") +
+  scale_fill_manual(name = "Var", values = pal)
+
+```
+
+With the stacked histogram with multivariable simulated entropy values, we see that Var 2 has the rightmost distribution and Var 6 has the leftmost distribution.
+
+```{r}
+ggplot(gh3, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, color = "black") +
+  scale_fill_manual(name = "Var", values = pal) +
+  facet_wrap(~ Var, ncol = 3)
+```
+
+These findings are reflected in the above graph grid. 
+
+As an individual variable, HeartDiseaseorAttack is the best determinant of BMI distribution, and the second best overall. In terms of multivariable interactions, HD = 1 BP = 0 Chol = 1 is the overall best determinant of BMI distribution for GenHealth = 3.
+
+```{r}
+clusters <- hclust(dist(total_vars_3), method = 'average')
+plot(clusters,xlab='',main='HC Tree of BMI Distribution by Variable Combination')
+```
+
+Weirdly, despite being the best individual determinant of BMI, the distribution of 1_0_0 is closest to 0_0_0. I would not expect patients with heart disease or having experienced a heart attack to have similar BMIs to people with no serious health concerns. This may be because people in the GenHlth = 3 category typically have average-to-poor BMIs to the point where HD does not have a large effect on overall BMI. 
+
+Despite 1_0_0 having the lowest entropy of an individual variable, it is actually 0_0_1 that is closest related to 1_0_1, the most accurate predicting variable interaction for BMI. The difference in entropy values was very low, so in terms of actual distribution, HighChol again remains more accurate.
+
+Through the three GenHlth levels, HighChol continues to be the most important singular variable for predicting BMI (although by less in the third level) and HD = 1 BP = 0 Chol = 1 is the most accurate BMI predicting multivariable interaction.
+
+### General Health Level 4
+
+```{r}
+gen_health_4_combined = combineCatVars(gen_health_4, vars = c('HeartDiseaseorAttack', 'HighBP', 'HighChol'), sep = "_")
+
+
+total_vars_4=Build_contigencytable(gen_health_4_combined,"HeartDiseaseorAttack_HighBP_HighChol","BMI",10,TRUE)
+total_vars_4=total_vars_4[,1:(ncol(total_vars_4)-1)]
+
+entropies = numeric(nrow(total_vars_4))
+
+for (i in 1:nrow(total_vars_4)) {
+  entropy_val <- Entropy(total_vars_4[i,],base=exp(1))
+  dataset_name <- rownames(total_vars_4)[i]
+  assign(dataset_name, entropy_val)
+  entropies[i] = entropy_val
+}
+
+entropy_table <- cbind.data.frame(rownames(total_vars_4), entropies)
+colnames(entropy_table) <- c("HeartDiseaseorAttack, HighBP, HighChol", "Entropy Values")
+entropy_table
+```
+
+The trend from the previous table of overall rising entropy values continues here. That means that the BMIs are more spread apart. This would make sense, as there will be more outliers with high BMIs as people's general health levels get worse. That skews the distribution, thus making the entropy rise overall.
+
+Unsurprisingly, the variable combination with the lowest entropy is 1_0_1. HighBP continues to get worse as a determinant with the highest entropy of 1.3607. As an individual variable, HeartDiseaseorAttack is now leading by a wide margin as the best predictor of BMI. I believe this is because as the GenHlth levels get worse, there are more patients with heart problems, meaning they will tend to clump up more than if there are fewer individuals spread across the BMI distribution.
+
+```{r}
+set.seed(123)
+genhlth_Tot_4=rmultinom(1000,100,total_vars_4[9,])
+B=ncol(genhlth_Tot_4)
+# initialize a vector to save all entropies.
+entropies=numeric(B)
+for(i in 1:B){
+  entropies[i]=Entropy(genhlth_Tot_4[,i],base=exp(1))
+}
+gh4_entropy_9 <- entropies
+hist(gh4_entropy_9,main="Histogram of GenHlth = 4 Sample Entropy",xlab='Entropy')
+```
+
+```{r}
+ for (i in 1:9) {
+    sample4=rmultinom(1000,100,total_vars_4[i,])
+    B=ncol(sample4)
+    # initialize a vector to save all entropies.
+    entropies=numeric(B)
+    for(j in 1:B){
+      entropies[j]=Entropy(sample4[,j],base=exp(1))
+    }
+    dataset_name <- paste("gh4_entropy_", i, sep="")
+    assign(dataset_name, entropies)
+}
+
+
+for( i in 1:9) {
+    dataset_name <- paste("gh4_entropy_", i, sep="")
+    y_name <- paste("Var ", i, sep="")
+    assign(dataset_name,data.frame(x = get(dataset_name), y = as.factor(y_name)))
+}
+
+colnames(gh4_entropy_1) <- c("Entropy", "Var")
+colnames(gh4_entropy_2) <- c("Entropy", "Var")
+colnames(gh4_entropy_3) <- c("Entropy", "Var")
+colnames(gh4_entropy_4) <- c("Entropy", "Var")
+colnames(gh4_entropy_5) <- c("Entropy", "Var")
+colnames(gh4_entropy_6) <- c("Entropy", "Var")
+colnames(gh4_entropy_7) <- c("Entropy", "Var")
+colnames(gh4_entropy_8) <- c("Entropy", "Var")
+colnames(gh4_entropy_9) <- c("Entropy", "Var")
+
+
+gh4 <- rbind(gh4_entropy_1, gh4_entropy_2, gh4_entropy_3, gh4_entropy_4, gh4_entropy_5, gh4_entropy_6, gh4_entropy_7, gh4_entropy_8, gh4_entropy_9)
+
+pal <- brewer.pal(9, "Purples")
+
+ggplot(gh4, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, bins = 30, color = "black", position = "stack") +
+  scale_fill_manual(name = "Var", values = pal)
+```
+
+```{r}
+ggplot(gh4, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, color = "black") +
+  scale_fill_manual(name = "Var", values = pal) +
+  facet_wrap(~ Var, ncol = 3)
+```
+
+From the two graphs, we can see that the Var 5 (0_1_0) is the rightmost distribution and Var 6 is the leftmost distribution.
+
+Based on the entropy distributions, as an individual variable, HeartDiseaseorAttack is the best determinant of BMI distribution, and the second best overall. In terms of multivariable interactions, HD = 1 BP = 0 Chol = 1 is the overall best determinant of BMI distribution for GenHealth = 4.
+
+We can finally see a difference between some of the GenHlth levels in terms of predictors.
+
+```{r}
+clusters <- hclust(dist(total_vars_4), method = 'average')
+plot(clusters,xlab='',main='HC Tree of BMI Distribution by Variable Combination')
+```
+
+Surprisingly, 0_0_1 and 0_0_0 are closely related in their distribution, meaning that the people with HighChol in this GenHlth level are not that different in BMI level than 0_0_0. Given that this was a good determinant before, my belief is that the BMI scores of the GenHlth = 5 level are so high that having high cholesterol does not have a big effect.
+
+1_0_1 and 1_0_0 are closely related; therefore, heart disease is definitely the biggest individual determinant of BMI shape in GenHlth = 5.
+
+### GenHlth Level 5
+
+```{r}
+gen_health_5_combined = combineCatVars(gen_health_5, vars = c('HeartDiseaseorAttack', 'HighBP', 'HighChol'), sep = "_")
+
+
+total_vars_5=Build_contigencytable(gen_health_5_combined,"HeartDiseaseorAttack_HighBP_HighChol","BMI",10,TRUE)
+total_vars_5=total_vars_5[,1:(ncol(total_vars_5)-1)]
+
+entropies = numeric(nrow(total_vars_5))
+
+for (i in 1:nrow(total_vars_5)) {
+  entropy_val <- Entropy(total_vars_5[i,],base=exp(1))
+  dataset_name <- rownames(total_vars_5)[i]
+  assign(dataset_name, entropy_val)
+  entropies[i] = entropy_val
+}
+
+entropy_table <- cbind.data.frame(rownames(total_vars_5), entropies)
+colnames(entropy_table) <- c("HeartDiseaseorAttack, HighBP, HighChol", "Entropy Values")
+entropy_table
+```
+
+For GenHlth = 5, the overall entropy values are much higher than those for GenHlth = 1. This confirms my previous theory that as GenHlth and BMI levels increase, it becomes much harder to predict the overall distribution due to there being more outliers with high BMI values.
+
+Perhaps more than any level before, 1_0_1 is by far the best predictor for BMI distribution. The next closest is 1_0_0, for both multivariable and individual variable predictors. The worst predictor, the variable with the highest entropy, is again, 0_1_0.
+
+
+```{r}
+set.seed(123)
+genhlth_Tot_5=rmultinom(1000,100,total_vars_5[9,])
+B=ncol(genhlth_Tot_5)
+# initialize a vector to save all entropies.
+entropies=numeric(B)
+for(i in 1:B){
+  entropies[i]=Entropy(genhlth_Tot_5[,i],base=exp(1))
+}
+gh5_entropy_9 <- entropies
+hist(gh5_entropy_9,main="Histogram of GenHlth = 5 Sample Entropy",xlab='Entropy')
+```
+
+The overall sample entropy continues to increase.
+
+```{r}
+ for (i in 1:9) {
+    sample5=rmultinom(1000,100,total_vars_5[i,])
+    B=ncol(sample5)
+    # initialize a vector to save all entropies.
+    entropies=numeric(B)
+    for(j in 1:B){
+      entropies[j]=Entropy(sample5[,j],base=exp(1))
+    }
+    dataset_name <- paste("gh5_entropy_", i, sep="")
+    assign(dataset_name, entropies)
+}
+
+
+for( i in 1:9) {
+    dataset_name <- paste("gh5_entropy_", i, sep="")
+    y_name <- paste("Var ", i, sep="")
+    assign(dataset_name,data.frame(x = get(dataset_name), y = as.factor(y_name)))
+}
+
+colnames(gh5_entropy_1) <- c("Entropy", "Var")
+colnames(gh5_entropy_2) <- c("Entropy", "Var")
+colnames(gh5_entropy_3) <- c("Entropy", "Var")
+colnames(gh5_entropy_4) <- c("Entropy", "Var")
+colnames(gh5_entropy_5) <- c("Entropy", "Var")
+colnames(gh5_entropy_6) <- c("Entropy", "Var")
+colnames(gh5_entropy_7) <- c("Entropy", "Var")
+colnames(gh5_entropy_8) <- c("Entropy", "Var")
+colnames(gh5_entropy_9) <- c("Entropy", "Var")
+
+
+gh5 <- rbind(gh5_entropy_1, gh5_entropy_2, gh5_entropy_3, gh5_entropy_4, gh5_entropy_5, gh5_entropy_6, gh5_entropy_7, gh5_entropy_8, gh5_entropy_9)
+
+pal <- brewer.pal(9, "Blues")
+
+ggplot(gh5, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, bins = 30, color = "black", position = "stack") +
+  scale_fill_manual(name = "Var", values = pal)
+
+```
+
+```{r}
+ggplot(gh5, aes(x = Entropy, fill = Var)) +
+  geom_histogram(binwidth = 0.05, color = "black") +
+  scale_fill_manual(name = "Var", values = pal) +
+  facet_wrap(~ Var, ncol = 3)
+```
+
+
+As an individual variable, HeartDiseaseorAttack is the best determinant of BMI distribution, and the second best overall. In terms of multivariable interactions, HD = 1 BP = 0 Chol = 1 is the overall best determinant of BMI distribution for GenHealth = 5. Interestingly, 0_0_0 has the third lowest entropy. I believe that these healthier individuals have less outliers with very high BMIs in comparison to those with more health problems. 
+In addition, when considering that this is the worst health category, a large amount of the patients have at least one health problem, so the sample of for 0_0_0 is smaller than normal.
+
+```{r}
+clusters <- hclust(dist(total_vars_5), method = 'average')
+plot(clusters,xlab='',main='HC Tree of BMI Distribution by Variable Combination')
+```
+
+It turns out that our best-predictor variable, 1_0_1, is so much better than the others, that it does not have a direct comparison on the first level of the HC tree. 1_0_0, our second best, is closest in likeness to 0_0_0. It is clear that for GenHealth = 5, HeartDiseaseorAttack is the best predictor for distribution shape.
+
+
+# Summary
+
+We looked at the five levels of General Health and three other categorical variables (HighBP, HighChol, and HeartDiseaseorAttack) to see what has the biggest effect on BMI distribution and what variables can be used as an accurate predictor of BMI distribution.
+
+
+Across all General Health levels, we found that 1_0_1, HeartDiseaseorAttack = 1 HighBP = 0 HighChol = 1, consistently had the lowest entropy values and leftmost entropy distribution. Therefore, the patients with these characteristics were placed closer together on the BMI distribution than the other variable groupings. This mean that it is the most accurate predictor for BMI across all categorical variable interactions.
+
+In terms of the singular variable's predictor accuracy, we see differences across the health levels. For GenHealth levels one and two, the most fit people on the scale, we see that HighChol is the best predictor variable due to its low entropy value distribution.
+
+For General Health = 3, HeartDiseaseorAttack has a lower entropy value (by a very small amount), but HighChol is closer in distribution shape (according to the HC tree) to 1_0_1. Therefore, HighChol can be remarked to be the better predictor variable.
+
+For General Health levels 4 and 5, HeartDiseaseorAttack is by far the best individual predictor variable.
+
+Conversely, HighBP performs poorly in all five general health levels, often having the highest entropy amongst all variables. Therefore, this variable is a poor predictor for a person's BMI.
+
+Another interesting observation is that the overall sample entropy rates grow as the general health levels get worse. I believe that the worse a person's general health is, the range of possible BMI values gets wider. As a result, the distributions get skewed with wider right tails. Thus, entropy values increase.
